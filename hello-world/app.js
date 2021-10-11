@@ -26,7 +26,9 @@ app.get('/', async (req, res) => {
     const client = newS3Client();
     const maxItems = req.query.maxItems || 20;
     const token = req.query.token;
-})
+    res.status(200).json(await getMessages(client, parseInt(maxItems), token));
+});
+
 app.post('/', plainTextParser, async ({ body: message }, res) => {
     const client = newS3Client();
     const entry = await writeMessage(client, message, getAuthor());
@@ -51,6 +53,23 @@ async function writeMessage(client, message, author) {
     await client.putObject({ key, Body: JSON.stringify(body)}).promise();
     return body
 
+}
+
+async function getMessages(client, maxItems, token) {
+    const { Contents, NextContinuationToken } = await client.listObjectsV2({
+        MaxKeys: maxItems,
+        ContinuationToken: token ?
+            Buffer.from(token, 'base64').toString('ascii') : undefined
+    }).promise();
+
+    const res = await Promise.all(Contents
+        .map(({ Key }) => client.getObject({ Key }).promise()));
+
+    return {
+        items: res.map(({ Body }) => JSON.parse(Body)),
+        nextToken: NextContinuationToken ?
+            Buffer.from(NextContinuationToken, 'ascii').toString('base64') : undefined
+    }
 }
 
 module.exports.lambdaHandler = serverless(app);

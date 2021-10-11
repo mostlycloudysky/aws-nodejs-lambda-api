@@ -11,21 +11,35 @@ Globals:
     Timeout: 3
 
 Resources:
+  CommentsBucket:
+    Type: AWS::S3::Bucket
+
   ExpressBackend:
-    Type: AWS::Serverless::Function
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
-      CodeUri: hello-world/
+      CodeUri: guestbook/
       Handler: app.lambdaHandler
       Runtime: nodejs12.x
+      Environment:
+        Variables:
+          BUCKET: !Ref CommentsBucket
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref CommentsBucket
       Events:
-        HelloWorld:
-          Type: HttpApi
+        Get:
+          Type: HttpApi # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
             Path: /{proxy+}
             Method: get
+        Post:
+          Type: HttpApi
+          Properties:
+            Path: /{proxy+}
+            Method: post
 
 Outputs:
-  HelloWorldApi:
+  GuestBookApi:
     Description: API Gateway endpoint URL for Prod stage for Hello World function
     Value:
       Fn::Sub: https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/
