@@ -1,8 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: 'aws-nodejs-lambda-api
-
-  Sample SAM Template for aws-nodejs-lambda-api
+Description: 'simple-node-api Sample SAM Template for simple-node-api
 
   '
 Globals:

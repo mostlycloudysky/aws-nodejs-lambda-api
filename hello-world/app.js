@@ -6,6 +6,6 @@ const app = new express();
 
 app.get('/', (req, res) => {
     res.send('Hello World')
-})
+});
 
 module.exports.lambdaHandler = serverless(app);
