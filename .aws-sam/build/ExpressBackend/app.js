@@ -26,50 +26,13 @@ app.get('/', async (req, res) => {
     const client = newS3Client();
     const maxItems = req.query.maxItems || 20;
     const token = req.query.token;
-    res.status(200).json(await getMessages(client, parseInt(maxItems), token));
-});
+})
 
-app.post('/', plainTextParser, async ({ body: message }, res) => {
-    const client = newS3Client();
-    const entry = await writeMessage(client, message, getAuthor());
-    res.status(201).json(entry);
-});
+async function writeMessage(s3, message, author) {
+    const namespace = v5(author, v5.URL);
+    const id = v5(message, namespace);
 
-function ninesComplement(date) {
-    return date.toISOString().split('')
-        .map(c => {
-            const n = parseInt(c);
-            if (isNaN(n)) return c;
-            else return (9 - n).toString()
-        }).join('');
-}
 
-async function writeMessage(client, message, author) {
-    const namespace = uuidv5(author, uuidv5.URL);
-    const id = uuidv5(message, namespace);
-    const date = new Date();
-    const key = `${ninesComplement(date)}/${id}`
-    const body = { message, date: date.toISOString(), author };
-    await client.putObject({ key, Body: JSON.stringify(body)}).promise();
-    return body
-
-}
-
-async function getMessages(client, maxItems, token) {
-    const { Contents, NextContinuationToken } = await client.listObjectsV2({
-        MaxKeys: maxItems,
-        ContinuationToken: token ?
-            Buffer.from(token, 'base64').toString('ascii') : undefined
-    }).promise();
-
-    const res = await Promise.all(Contents
-        .map(({ Key }) => client.getObject({ Key }).promise()));
-
-    return {
-        items: res.map(({ Body }) => JSON.parse(Body)),
-        nextToken: NextContinuationToken ?
-            Buffer.from(NextContinuationToken, 'ascii').toString('base64') : undefined
-    }
 }
 
 module.exports.lambdaHandler = serverless(app);
